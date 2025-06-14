@@ -11,3 +11,9 @@ try:
     st.write(data.get("explanation", ""))
 except:
     st.error("نتونستیم اطلاعات NASA رو بگیریم.")
+from sentence_transformers import SentenceTransformer
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+embedding = model.encode("This is a test sentence.")
+st.write("✅ مدل sentence-transformers با موفقیت لود شد.")
+st.write("Embedding:", embedding[:10])
