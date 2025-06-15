@@ -205,7 +205,8 @@ if query:
 
         arxiv_texts = search_arxiv(query)
         docs = [Document(text=t) for t in arxiv_texts]
-        index = VectorStoreIndex.from_documents(docs)
+        index = VectorStoreIndex.from_documents(docs, show_progress=True)
+
         nodes = index.as_retriever().retrieve(query)
         arxiv_context = "\n\n".join([n.get_content()[:500] for n in nodes])
 
@@ -227,10 +228,8 @@ Question: {query}
 
 Answer:
 """
+
         response = llm.complete(prompt=prompt)
-        st.subheader("💬 Cosmic Answer")
-        st.markdown(response.text)
-        print("LLM RESPONSE:", response.text)
 
         st.subheader("🔊 Topic Extracted:")
         st.code(topic)
@@ -244,16 +243,17 @@ Answer:
         st.subheader("💬 Cosmic Answer")
         st.markdown(response.text)
 
+        print("🪐 LLM RESPONSE:", response.text)  # دیباگ در لاگ
+
         if image_url:
             st.image(image_url, caption=f"Wikipedia image for {topic}", width=350)
 
         if page_url:
             st.markdown(f"[🔗 Read more on Wikipedia]({page_url})")
 
-        if topic.lower() == "cosmic microwave background":
+        if topic and topic.lower() == "cosmic microwave background":
             st.markdown("📊 Sample visual of CMB intensity vs wavelength:")
             plot_cmb_example()
 
 else:
     st.info("Enter a question about the cosmos to begin your journey! 🚀")
-
