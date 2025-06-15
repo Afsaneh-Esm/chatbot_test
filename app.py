@@ -33,14 +33,22 @@ html, body, [class*="css"] {
 """, unsafe_allow_html=True)
 
 # ─────────────── 3. API Keys and LLM ───────────────
+
+
+# Load secrets from Streamlit
 os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 NASA_API_KEY = st.secrets["NASA_API_KEY"]
 
+# Set up embedding model
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core import Settings
 embed_model = HuggingFaceEmbedding(model_name="all-MiniLM-L6-v2", device="cpu")
 Settings.embed_model = embed_model
+
+# Set up LLM using Groq
+from llama_index.llms.groq import Groq
 llm = Groq(model="llama3-70b-8192", api_key=os.environ["GROQ_API_KEY"])
 Settings.llm = llm
-sbert_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # ─────────────── 4. Helper Functions ───────────────
 def get_apod_image():
