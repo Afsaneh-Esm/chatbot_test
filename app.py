@@ -15,7 +15,6 @@ from llama_index.llms.groq import Groq
 from sentence_transformers import SentenceTransformer, util
 
 
-
 # ─────────────── 2. Page config and CSS ───────────────
 st.set_page_config(page_title="🌌 Cosmic Chatbot", layout="wide")
 st.markdown("""
@@ -34,6 +33,8 @@ html, body, [class*="css"] {
 
 # ─────────────── 3. API Keys and LLM ───────────────
 
+
+sbert_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Load secrets from Streamlit
 os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
