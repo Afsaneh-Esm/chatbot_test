@@ -47,7 +47,7 @@ Settings.embed_model = embed_model
 
 # Set up LLM using Groq
 from llama_index.llms.groq import Groq
-llm = Groq(model="llama3-70b-8192", api_key=os.environ["GROQ_API_KEY"])
+llm = Groq(model="llama3-8b-8192", api_key=os.environ["GROQ_API_KEY"])
 Settings.llm = llm
 
 # ─────────────── 4. Helper Functions ───────────────
@@ -228,6 +228,9 @@ Question: {query}
 Answer:
 """
         response = llm.complete(prompt=prompt)
+        st.subheader("💬 Cosmic Answer")
+        st.markdown(response.text)
+        print("LLM RESPONSE:", response.text)
 
         st.subheader("🔊 Topic Extracted:")
         st.code(topic)
