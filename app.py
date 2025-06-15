@@ -172,6 +172,7 @@ Answer:
         response = llm.complete(prompt=prompt)
         response_text = getattr(response, "text", None) or getattr(getattr(response, "message", None), "content", "")
 
+
         st.subheader("🛠 Raw LLM Output")
         st.code(response_text or "⚠️ No response returned", language="markdown")
         print("📤 RAW LLM RESPONSE:", response_text)
@@ -180,7 +181,8 @@ Answer:
         st.code(topic)
 
         st.subheader("💬 Cosmic Answer")
-        st.markdown(response_text or "⚠️ No response returned")
+
+        st.markdown(response_text or "⚠️ No response from LLM")
 
         st.code(final_context[:1000], language="markdown")
 
