@@ -170,6 +170,10 @@ Answer:
 """
 
         response = llm.complete(prompt=prompt)
+        st.subheader("🛠 Raw LLM Output")
+        st.code(response.text or "⚠️ No response returned", language="markdown")
+        print("📤 RAW LLM RESPONSE:", response.text)
+
         st.subheader("🔊 Topic Extracted:")
         st.code(topic)
         st.subheader("💬 Cosmic Answer")
