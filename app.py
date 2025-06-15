@@ -14,6 +14,8 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.llms.groq import Groq
 from sentence_transformers import SentenceTransformer, util
 
+
+
 # ─────────────── 2. Page config and CSS ───────────────
 st.set_page_config(page_title="🌌 Cosmic Chatbot", layout="wide")
 st.markdown("""
@@ -34,9 +36,10 @@ html, body, [class*="css"] {
 os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 NASA_API_KEY = st.secrets["NASA_API_KEY"]
 
+
 embed_model = HuggingFaceEmbedding(model_name="all-MiniLM-L6-v2", device="cpu")
 Settings.embed_model = embed_model
-llm = Groq(model="llama3-8b-8192", api_key=os.environ["GROQ_API_KEY"])
+llm = Groq(model="llama3-70b-8192", api_key=os.environ["GROQ_API_KEY"])
 Settings.llm = llm
 sbert_model = SentenceTransformer("all-MiniLM-L6-v2")
 
@@ -75,10 +78,23 @@ def get_next_full_moon():
         return f"Lunar data unavailable: {e}"
 
 def get_topic_embedding_match(query):
-    known_topics = ["black hole", "milky way", "dark matter", "supernova", "jupiter", "moon", "neutron star", "cosmic microwave background"]
+    known_topics = [
+        "black hole", "white dwarf", "milky way", "solar system", "event horizon", "big bang",
+        "dark matter", "neutron star", "cosmic microwave background", "supernova", "Jupiter's composition",
+        "gravitational wave", "red giant", "pulsar", "x-ray binary", "solar flare",
+        "aurora borealis", "exoplanet", "hot jupiter", "super-earth", "ice giant",
+        "terrestrial planet", "planet nine", "oort cloud", "kuiper belt", "asteroid belt",
+        "dwarf planet", "pluto", "mars", "venus", "jupiter", "saturn", "uranus", "neptune",
+        "moon", "earth", "space shuttle", "spacex", "starlink", "mars rover", "perseverance",
+        "curiosity", "space debris", "iss", "apollo program", "voyager 1", "hubble space telescope",
+        "james webb space telescope", "solar eclipse", "lunar eclipse", "solar neutrino"
+    ]
+# Splitting the question based on common words
     parts = re.split(r"[,.;:!?&]| and | or ", query.lower())
 
-    best_topic, best_score = None, -1
+    best_topic = None
+    best_score = -1
+
     for part in parts:
         part = part.strip()
         if not part:
@@ -88,25 +104,47 @@ def get_topic_embedding_match(query):
         similarities = util.cos_sim(query_emb, topic_embs)[0]
         top_idx = int(np.argmax(similarities))
         score = float(similarities[top_idx])
+
         if score > best_score:
             best_score = score
             best_topic = known_topics[top_idx]
+
     return best_topic
+
 
 def get_wikipedia_summary(topic):
     try:
-        url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{topic.replace(' ', '_')}"
+        topic = topic.replace(" ", "_")
+        url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{topic}"
         response = requests.get(url)
         if response.status_code == 200:
             data = response.json()
-            return data.get("extract", ""), data.get("thumbnail", {}).get("source", ""), data.get("content_urls", {}).get("desktop", {}).get("page", "")
+            summary = data.get("extract", "")
+            image_url = data.get("thumbnail", {}).get("source", "")
+            page_url = data.get("content_urls", {}).get("desktop", {}).get("page", "")
+            return summary, image_url, page_url
+        return "", "", ""
     except:
-        pass
-    return "", "", ""
+        return "", "", ""
+
+def get_duckduckgo_summary(topic):
+    try:
+        url = f"https://api.duckduckgo.com/?q={topic}&format=json"
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get("Abstract", "")
+        return ""
+    except:
+        return ""
 
 def search_arxiv(query, max_results=5):
     try:
-        search = arxiv.Search(query=query, max_results=max_results, sort_by=arxiv.SortCriterion.Relevance)
+        search = arxiv.Search(
+            query=query,
+            max_results=max_results,
+            sort_by=arxiv.SortCriterion.Relevance,
+            sort_order=arxiv.SortOrder.Descending)
         return [f"{res.title}\n\n{res.summary}" for res in search.results()]
     except:
         return []
@@ -123,16 +161,26 @@ def plot_cmb_example():
 
 # ─────────────── 5. Streamlit App ───────────────
 st.title("🌌 Ask the Cosmos")
-st.markdown("Type a space-related question (e.g., *What is a black hole?*)")
+st.markdown("Type a space-related question (e.g., *When is the next full moon?* or *What is Jupiter?*)")
+
+#query = st.text_input("Ask your question about the universe (please scroll down for your answer):")
 query = st.text_input("Ask your question about the universe:")
+
+st.markdown("""
+<div style='text-align: center; font-size: 18px; margin-top: 10px; color: #cccccc;'>
+✨ Your answer will gently appear below... just scroll ✨
+</div>
+""", unsafe_allow_html=True)
+
+
 
 st.subheader("📸 NASA Astronomy Picture of the Day")
 title, img_url, desc = get_apod_image()
 if img_url:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.image(img_url, caption=title, use_container_width=True)
-        st.markdown(f"<p style='text-align: center; font-size: 14px;'>{desc}</p>", unsafe_allow_html=True)
+     st.image(img_url, caption=title, use_container_width=True)
+     st.markdown(f"<p style='text-align: center; font-size: 14px;'>{desc}</p>", unsafe_allow_html=True)
 
 st.subheader("📰 Latest NASA News")
 for title, link in get_nasa_news():
@@ -161,6 +209,10 @@ You are a helpful and knowledgeable cosmic assistant that answers space-related 
 
 Use the information provided in the context below as your primary source. If the answer isn't fully covered there, you may also draw from general scientific knowledge to complete your reply — but remain truthful and clearly mark any uncertainty.
 
+If the topic is a well-known scientific concept (e.g. black holes, dark matter, cosmic microwave background), expand the explanation slightly beyond the raw definition to include historical context, scientific significance, or how it's observed.
+
+Respond in a way that balances scientific accuracy and accessibility — make it understandable for non-experts without oversimplifying key facts.
+
 Context:
 {final_context}
 
@@ -168,30 +220,29 @@ Question: {query}
 
 Answer:
 """
-
         response = llm.complete(prompt=prompt)
-        response_text = getattr(response, "text", None) or getattr(getattr(response, "message", None), "content", "")
-
-
-        st.subheader("🛠 Raw LLM Output")
-        st.code(response_text or "⚠️ No response returned", language="markdown")
-        print("📤 RAW LLM RESPONSE:", response_text)
 
         st.subheader("🔊 Topic Extracted:")
         st.code(topic)
 
+        st.subheader("🔊 Wikipedia or DuckDuckGo Summary Used:")
+        st.code(wiki_context, language="markdown")
+
+        st.subheader("🛋️ Final Context Sent to LLM:")
+        st.code(final_context[:2000], language="markdown")
+
         st.subheader("💬 Cosmic Answer")
-
-        st.markdown(response_text or "⚠️ No response from LLM")
-
-        st.code(final_context[:1000], language="markdown")
+        st.markdown(response.text)
 
         if image_url:
             st.image(image_url, caption=f"Wikipedia image for {topic}", width=350)
+
         if page_url:
-            st.markdown(f"[Read more on Wikipedia]({page_url})")
-        if topic and topic.lower() == "cosmic microwave background":
+            st.markdown(f"[🔗 Read more on Wikipedia]({page_url})")
+
+        if topic.lower() == "cosmic microwave background":
             st.markdown("📊 Sample visual of CMB intensity vs wavelength:")
             plot_cmb_example()
+
 else:
     st.info("Enter a question about the cosmos to begin your journey! 🚀")
